@@ -1,0 +1,52 @@
+(This code depth-probes a grid of points, with the objective of milling)
+(better PCBs, regardless of irregularities in the copper-clad board or)
+(due to how the board is clamped down- eg, bowing)
+
+(This should be paired with pcb2gcode and patch-gcode.py for convering)
+(PCB gerber files into depth-compensated toolpaths)
+
+(===START STUFF TO EDIT===)
+#<numx> = 7			(number of probe points along x)
+#<numy> = 7			(number of probe points along y)
+#<dx> = 0.300		(x distance between probe points)
+#<dy> = 0.300		(y distance between probe points)
+#<cx> = 0.000		(x center of probe area)
+#<cy> = 0.000		(y center of probe area)
+#<zprobe> = -0.050	(Max depth to probe to)
+#<zsafe> = 0.050	(Safe Z height)
+#<probefeed> = 1.00	(Feed rate for probing)
+(===END STUFF TO EDIT===)
+
+G94     ( Inches per minute feed rate. )
+G20     ( Units == INCHES.             )
+G90     ( Absolute coordinates.        )
+
+G00 Z#<zsafe>
+
+(PROBEOPEN /tmp/probepoints.dat)
+
+
+#<x> = [#<cx> - [#<numx> - 1]*#<dx>/2]
+#<y> = [#<cy> - [#<numy> - 1]*#<dy>/2]
+
+(iterate over y)
+o100 while [#<y> LE [#<cy> + [#<numy> - 1]*#<dy>/2.000 + 0.001] ]
+
+	(iterate over x)
+	#<x> = [#<cx> - [#<numx> - 1]*#<dx>/2]
+	o101 while [#<x> LE [#<cx> + [#<numx> - 1]*#<dx>/2.000 + 0.001] ]
+		G00 X#<x> Y#<y>
+		G38.2 F#<probefeed> Z#<zprobe>
+		G00 Z#<zsafe>
+		#<x> = [#<x> + #<dx>]
+	o101 endwhile
+
+	#<y> = [#<y> + #<dy>]
+o100 endwhile
+
+
+(PROBECLOSE)
+
+G00 Z#<zsafe> (unnecessary)
+
+M2 ( Program end. )
